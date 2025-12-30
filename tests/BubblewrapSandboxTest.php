@@ -392,6 +392,8 @@ class BubblewrapSandboxTest extends TestCase
     public function testFromConfigValidatesArrayTypes()
     {
         $config = array(
+            // Provide a known executable so the test doesn't depend on bubblewrap being installed.
+            'binary' => PHP_BINARY,
             'base_args' => 'not-an-array',
             'read_only_binds' => 'not-an-array',
             'write_binds' => 'not-an-array',
