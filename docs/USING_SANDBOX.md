@@ -106,3 +106,58 @@ try {
 - Prefira passar argumentos em array (sem shell) para evitar injeção.
 - Defina timeouts razoáveis para evitar travar a fila/worker.
 - Mantenha logs do comando e do stderr para diagnóstico.
+
+## Exemplos práticos
+
+### Compactar/normalizar PDF com Ghostscript
+
+O comando original `shell_exec('gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -dPreserveAnnots=true -sOutputFile='.$finalFilePath.' '.$localFile.'');` pode ser executado dentro do sandbox assim:
+
+```php
+$binds = [
+    ['from' => dirname($localFile),    'to' => dirname($localFile),    'read_only' => true],  // ler PDF de entrada
+    ['from' => dirname($finalFilePath),'to' => dirname($finalFilePath),'read_only' => false], // gravar PDF final
+];
+
+$args = [
+    'gs',
+    '-sDEVICE=pdfwrite',
+    '-dCompatibilityLevel=1.4',
+    '-dNOPAUSE',
+    '-dQUIET',
+    '-dBATCH',
+    '-dPreserveAnnots=true',
+    '-sOutputFile=' . $finalFilePath,
+    $localFile,
+];
+
+$process = BubblewrapSandbox::run($args, $binds, null, null, 120);
+```
+
+- Use os binds para expor apenas as pastas que contêm o PDF de entrada e a pasta de saída.
+- O array de argumentos evita interpolação em shell; ajuste o timeout conforme o tamanho dos arquivos.
+
+### Converter HEIC para PNG com `heif-convert`
+
+O método abaixo mostra como adaptar a conversão para rodar no sandbox, expondo apenas os diretórios de entrada e saída:
+
+```php
+$binds = [
+    ['from' => dirname($sourcePath), 'to' => dirname($sourcePath), 'read_only' => true],
+    ['from' => dirname($outputPath), 'to' => dirname($outputPath), 'read_only' => false],
+];
+
+$args = [
+    // ex.: /usr/bin/heif-convert
+    $heifConvertPath,
+    $sourcePath,
+    $outputPath,
+];
+
+$process = BubblewrapSandbox::run($args, $binds, dirname($sourcePath), null, 60);
+// use getErrorOutput() para stderr
+$output = $process->getOutput();
+```
+
+- Garanta que `heif-convert` está acessível no host; exponha apenas as pastas necessárias.
+- Mantenha logs e trate `returnCode` como no exemplo original para identificar falhas.
