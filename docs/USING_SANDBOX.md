@@ -9,7 +9,7 @@ Este pacote coloca comandos externos em uma “caixa de areia” (sandbox) usand
   - Debian/Ubuntu: `apt-get install bubblewrap`
   - Alpine: `apk add bubblewrap`
   - Fedora/CentOS/RHEL: `yum install bubblewrap` ou `dnf install bubblewrap`
-- Laravel 5–12. O código mira PHP 5.6+, mas a suíte de testes usa classes anônimas e roda a partir do PHP 7.x; use 7.x+ em produção.
+- Laravel 5–12 em PHP 7.0+ (requisito do Composer). O código evita sintaxe moderna para funcionar em apps antigos, mas os testes e o suporte começam no PHP 7.x; use no mínimo PHP 7 em produção.
 
 ## Instalação no projeto Laravel
 
@@ -42,7 +42,8 @@ Para ambientes não padrão, ajuste apenas `binary`. Para expor mais pastas, adi
 ```php
 use SecureRun\BubblewrapSandboxRunner;
 
-$sandbox = BubblewrapSandboxRunner::fromConfig(config('sandbox'));
+$config = require __DIR__ . '/../config/sandbox.php'; // ou um array próprio de config
+$sandbox = BubblewrapSandboxRunner::fromConfig($config);
 
 $process = $sandbox->run(
     ['echo', 'hello'],   // comando e argumentos em array

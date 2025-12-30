@@ -6,7 +6,7 @@ Security layer that forbids executing external commands without a bubblewrap san
 
 - Prevents RCE via unsafe `shell_exec/exec/system/passthru/proc_open`.
 - Isolates filesystem, environment variables, and network for the child process.
-- Compatible with Laravel 5.x to 12.x. Runtime code targets PHP 5.6+, but CI starts at PHP 7.x because the test suite uses anonymous classes (PHP 5.6 is not covered—use 7.x+ in production).
+- Compatible with Laravel 5.x to 12.x on PHP 7.0+ (Composer requirement). Runtime code sticks to older syntax for legacy apps, but tests and support start on PHP 7.x; use PHP 7+ (or newer) in production.
 - Runs on Linux only (bubblewrap is a Linux-specific sandbox).
 
 ## Installation
