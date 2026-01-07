@@ -3,6 +3,7 @@
 namespace SecureRun\Tests;
 
 use SecureRun\BubblewrapSandboxRunner;
+use SecureRun\ProcessWrapper;
 use SecureRun\Exceptions\BubblewrapUnavailableException;
 use Symfony\Component\Process\Process;
 
@@ -17,7 +18,7 @@ class BubblewrapSandboxIntegrationTest extends TestCase
      * @param array<int,string> $command
      * @param array<int,mixed>  $extraBinds
      * @param array<int,string> $writeBinds
-     * @return \Symfony\Component\Process\Process
+     * @return \SecureRun\ProcessWrapper
      */
     protected function runSandboxCommand(array $baseArgs, array $readOnlyBinds, array $command, array $extraBinds = array(), array $writeBinds = array())
     {
@@ -28,25 +29,25 @@ class BubblewrapSandboxIntegrationTest extends TestCase
 
         try {
             $runner = new BubblewrapSandboxRunner($binary, $baseArgs, $readOnlyBinds, $writeBinds);
-            $process = $runner->process($command, $extraBinds);
+            $wrapper = $runner->process($command, $extraBinds);
         } catch (BubblewrapUnavailableException $e) {
             $this->markTestSkipped('bubblewrap unavailable: ' . $e->getMessage());
         }
 
-        $process->run();
+        $wrapper->run();
 
-        $this->skipIfNamespaceUnsupported($process);
+        $this->skipIfNamespaceUnsupported($wrapper);
 
-        return $process;
+        return $wrapper;
     }
 
     /**
      * Skip tests when the kernel refuses to create namespaces (common in CI).
      *
-     * @param \Symfony\Component\Process\Process $process
+     * @param \Symfony\Component\Process\Process|\SecureRun\ProcessWrapper $process
      * @return void
      */
-    protected function skipIfNamespaceUnsupported(Process $process)
+    protected function skipIfNamespaceUnsupported($process)
     {
         if ($process->isSuccessful()) {
             return;

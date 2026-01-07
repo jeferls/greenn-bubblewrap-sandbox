@@ -46,8 +46,15 @@ $binds = array(
     array('from' => storage_path('tmp'), 'to' => '/tmp', 'read_only' => false),
 );
 
-$process = $runner->run($command, $binds, '/tmp', null, 120);
-$output = $process->getOutput();
+$wrapper = $runner->run($command, $binds, '/tmp', null, 120);
+$output = $wrapper->getOutput(); // ProcessWrapper works like Process
+
+// Optional: access environment variables (when explicitly enabled)
+use SecureRun\RunOptions;
+$wrapper = $runner->run($command, $binds, '/tmp', ['VAR' => 'value'], 120, [
+    RunOptions::UNSECURE_ENV_ACCESS => true
+]);
+$env = $wrapper->getEnv(); // returns ['VAR' => 'value']
 ```
 
 Or via the Laravel facade (no `/Laravel` namespace anymore):
@@ -55,8 +62,8 @@ Or via the Laravel facade (no `/Laravel` namespace anymore):
 ```php
 use SecureRun\BubblewrapSandbox;
 
-$process = BubblewrapSandbox::run(['ls', '-la']);
-$output = $process->getOutput();
+$wrapper = BubblewrapSandbox::run(['ls', '-la']);
+$output = $wrapper->getOutput(); // ProcessWrapper is compatible with Process
 ```
 
 Note: `SecureRun\Sandbox\BubblewrapSandbox` remains as a backwards-compatible shim for apps that imported the old namespace. Prefer `SecureRun\BubblewrapSandbox` (or the `BubblewrapSandbox` alias).
@@ -65,6 +72,12 @@ Note: `SecureRun\Sandbox\BubblewrapSandbox` remains as a backwards-compatible sh
 
 - Quick usage guide: [docs/USING_SANDBOX.md](docs/USING_SANDBOX.md)
 - Run method parameters: [docs/PARAMETROS_RUN.md](docs/PARAMETROS_RUN.md)
+- Environment variables access examples: [docs/EXEMPLOS_ENV.md](docs/EXEMPLOS_ENV.md)
+
+### Advanced features
+
+- **RunOptions**: Centralized option constants for the `run()` method. Use `RunOptions::UNSECURE_ENV_ACCESS` instead of string literals to prevent typos.
+- **ProcessWrapper**: The `run()` method always returns `ProcessWrapper` (which is compatible with Symfony Process) for consistent return types. Environment variable access via `getEnv()` is only available when `unsecure_env_access` is explicitly enabled.
 
 ### Security rules enforced
 

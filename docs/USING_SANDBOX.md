@@ -45,15 +45,17 @@ use SecureRun\BubblewrapSandboxRunner;
 $config = require __DIR__ . '/../config/sandbox.php'; // ou um array próprio de config
 $sandbox = BubblewrapSandboxRunner::fromConfig($config);
 
-$process = $sandbox->run(
+// run() sempre retorna ProcessWrapper (compatível com Process)
+$wrapper = $sandbox->run(
     ['echo', 'hello'],   // comando e argumentos em array
     [],                  // binds extras (opcional)
     null,                // diretório de trabalho (opcional)
     null,                // variáveis de ambiente (opcional)
-    30                   // timeout em segundos (opcional)
+    30,                  // timeout em segundos (opcional)
+    []                   // opções (opcional)
 );
 
-echo $process->getOutput();
+echo $wrapper->getOutput(); // funciona normalmente
 ```
 
 ### Com Laravel (facade `BubblewrapSandbox`)
@@ -61,9 +63,34 @@ echo $process->getOutput();
 ```php
 use SecureRun\BubblewrapSandbox; // alias registrado como BubblewrapSandbox
 
-$process = BubblewrapSandbox::run(['ls', '-la']);
-$saida = $process->getOutput();
+// run() sempre retorna ProcessWrapper (compatível com Process)
+$wrapper = BubblewrapSandbox::run(['ls', '-la']);
+$saida = $wrapper->getOutput();
 ```
+
+### Acessando variáveis de ambiente (opcional)
+
+O método `run()` sempre retorna `ProcessWrapper` (compatível com `Process`). Por padrão, o acesso às variáveis de ambiente via `getEnv()` está desabilitado e lança exceção por questões de segurança. Se você precisar acessá-las explicitamente, use a opção `unsecure_env_access`:
+
+```php
+use SecureRun\RunOptions;
+
+$env = ['PYTHONPATH' => '/tmp', 'HOME' => '/tmp'];
+$wrapper = BubblewrapSandbox::run(
+    ['python3', 'script.py'],
+    [],
+    null,
+    $env,
+    120,
+    [RunOptions::UNSECURE_ENV_ACCESS => true]
+);
+
+// $wrapper é um ProcessWrapper (compatível com Process)
+$retrievedEnv = $wrapper->getEnv(); // retorna ['PYTHONPATH' => '/tmp', 'HOME' => '/tmp']
+echo $wrapper->getOutput(); // funciona como Process normal
+```
+
+**⚠️ Atenção:** Use `unsecure_env_access => true` apenas quando realmente necessário. Por padrão, o método nunca retorna as variáveis de ambiente por questões de segurança. Veja [docs/PARAMETROS_RUN.md](PARAMETROS_RUN.md) para mais detalhes sobre o parâmetro `$options`.
 
 ## Expondo arquivos/pastas para o comando
 
@@ -75,13 +102,14 @@ $binds = [
     ['from' => '/var/www/storage/output', 'to' => '/var/www/storage/output', 'read_only' => false],
 ];
 
-$process = BubblewrapSandbox::run(
+$wrapper = BubblewrapSandbox::run(
     ['heif-convert', '/var/www/storage/input/photo.heic', '/var/www/storage/output/photo.png'],
     $binds,
     '/var/www/storage/input', // opcional: diretório de trabalho
-    null,
-    60
+    null,                      // opcional: variáveis de ambiente
+    60                        // opcional: timeout
 );
+// $wrapper é ProcessWrapper (funciona como Process)
 ```
 
 - `from`: caminho no host.
@@ -132,7 +160,10 @@ $args = [
     $localFile,
 ];
 
-$process = BubblewrapSandbox::run($args, $binds, null, null, 120);
+$wrapper = BubblewrapSandbox::run($args, $binds, null, null, 120);
+// ou com opções:
+// $wrapper = BubblewrapSandbox::run($args, $binds, null, null, 120, []);
+// $wrapper é ProcessWrapper (funciona como Process)
 ```
 
 - Use os binds para expor apenas as pastas que contêm o PDF de entrada e a pasta de saída.
@@ -155,9 +186,15 @@ $args = [
     $outputPath,
 ];
 
-$process = BubblewrapSandbox::run($args, $binds, dirname($sourcePath), null, 60);
+$wrapper = BubblewrapSandbox::run($args, $binds, dirname($sourcePath), null, 60);
 // use getErrorOutput() para stderr
-$output = $process->getOutput();
+$output = $wrapper->getOutput();
+// $wrapper é ProcessWrapper (compatível com Process)
+```
+
+## Opções avançadas
+
+O método `run()` aceita um parâmetro adicional `$options` para configurações avançadas. Veja a documentação completa em [docs/PARAMETROS_RUN.md](PARAMETROS_RUN.md) para detalhes sobre todas as opções disponíveis.
 ```
 
 - Garanta que `heif-convert` está acessível no host; exponha apenas as pastas necessárias.
